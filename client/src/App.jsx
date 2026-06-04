@@ -5,7 +5,9 @@ import ExpenseList from './components/ExpenseList'
 import Summary from './components/Summary'
 import FilterBar from './components/FilterBar'
 import Chart from './components/Chart'
+import PieChart from './components/PieChart'
 import Modal from './components/Modal'
+import IncomeChart from './components/IncomeChart'
 import IncomeForm from './components/IncomeForm'
 import Login from './components/Login'
 
@@ -47,12 +49,96 @@ function App() {
     setTimeout(() => setToastMessage(''), 3000)
   }, [])
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = () => {
     localStorage.removeItem('user')
     setUser(null)
-    setToastMessage('Logged out successfully.')
-    setTimeout(() => setToastMessage(''), 3000)
-  }, [])
+  }
+
+  // Helper to download CSV
+  const downloadCSV = (data, filename) => {
+    if (!data || data.length === 0) {
+      alert('No data to export')
+      return
+    }
+    const header = Object.keys(data[0])
+    const rows = data.map(item =>
+      header.map(field => `"${String(item[field] ?? '').replace(/"/g, '""')}"`).join(',')
+    )
+    const csvContent = [header.join(','), ...rows].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  // Export current week's expenses
+  const handleDownloadWeek = () => {
+    const today = new Date()
+    const day = today.getDay()
+    const diffToMonday = (day + 6) % 7
+    const monday = new Date(today)
+    monday.setHours(0, 0, 0, 0)
+    monday.setDate(today.getDate() - diffToMonday)
+    const sunday = new Date(monday)
+    sunday.setDate(monday.getDate() + 6)
+    const weekExpenses = expenses.filter(exp => {
+      if (!exp.date) return false
+      const d = new Date(exp.date)
+      return d >= monday && d <= sunday
+    })
+    const filename = `expenses_week_${monday.toISOString().slice(0,10)}.csv`
+    downloadCSV(weekExpenses, filename)
+  }
+
+  // Export today's expenses
+  const handleDownloadDay = () => {
+    const todayKey = new Date().toISOString().split('T')[0]
+    const dayExpenses = expenses.filter(exp => {
+      if (!exp.date) return false
+      const dKey = new Date(exp.date).toISOString().split('T')[0]
+      return dKey === todayKey
+    })
+    const filename = `expenses_today_${todayKey}.csv`
+    downloadCSV(dayExpenses, filename)
+  }
+
+  // Export current week's incomes
+  const handleDownloadIncomeWeek = () => {
+    const today = new Date()
+    const day = today.getDay()
+    const diffToMonday = (day + 6) % 7
+    const monday = new Date(today)
+    monday.setHours(0, 0, 0, 0)
+    monday.setDate(today.getDate() - diffToMonday)
+    const sunday = new Date(monday)
+    sunday.setDate(monday.getDate() + 6)
+    sunday.setHours(23, 59, 59, 999)
+    const weekIncomes = incomes.filter(inc => {
+      if (!inc.date) return false
+      const d = new Date(inc.date + 'T00:00:00')
+      return d >= monday && d <= sunday
+    })
+    const filename = `income_week_${monday.toISOString().slice(0,10)}.csv`
+    downloadCSV(weekIncomes, filename)
+  }
+
+  // Export current month's incomes
+  const handleDownloadIncomeMonth = () => {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = today.getMonth()
+    const monthIncomes = incomes.filter(inc => {
+      if (!inc.date) return false
+      const d = new Date(inc.date + 'T00:00:00')
+      return d.getFullYear() === year && d.getMonth() === month
+    })
+    const monthName = today.toLocaleString(undefined, { month: 'long' })
+    const filename = `income_${monthName}_${year}.csv`
+    downloadCSV(monthIncomes, filename)
+  }
 
   const displayedExpenses = useMemo(() => {
     return filteredExpenses.filter(exp => {
@@ -157,6 +243,15 @@ function App() {
               <span>💸</span> Expenses
             </button>
             <button
+              onClick={() => setActiveTab('incomes')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${activeTab === 'incomes'
+                  ? 'bg-accent text-navy-dark shadow-md shadow-accent/15'
+                  : 'text-slate-400 hover:bg-navy/60 hover:text-slate-100'
+                }`}
+            >
+              <span>💰</span> Incomes
+            </button>
+            <button
               onClick={() => setActiveTab('analytics')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${activeTab === 'analytics'
                   ? 'bg-accent text-navy-dark shadow-md shadow-accent/15'
@@ -225,6 +320,13 @@ function App() {
             List
           </button>
           <button
+            onClick={() => setActiveTab('incomes')}
+            className={`px-3 py-1 rounded text-xs font-semibold transition ${activeTab === 'incomes' ? 'bg-accent text-navy-dark font-bold' : 'text-slate-400'
+              }`}
+          >
+            Income
+          </button>
+          <button
             onClick={() => setActiveTab('analytics')}
             className={`px-3 py-1 rounded text-xs font-semibold transition ${activeTab === 'analytics' ? 'bg-accent text-navy-dark font-bold' : 'text-slate-400'
               }`}
@@ -242,6 +344,7 @@ function App() {
             <h2 className="text-2xl font-extrabold text-navy-dark tracking-tight">
               {activeTab === 'dashboard' && 'Dashboard Overview'}
               {activeTab === 'expenses' && 'Expense Records'}
+              {activeTab === 'incomes' && 'Income Records'}
               {activeTab === 'analytics' && 'Expense Analytics'}
             </h2>
           </div>
@@ -316,7 +419,7 @@ function App() {
 
             {/* Grid Layout: Chart and Recent Transactions side-by-side on desktop */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-              <Chart expenses={expenses} />
+              <PieChart expenses={expenses} />
 
               {/* Recent Transactions */}
               <div className="space-y-3">
@@ -340,17 +443,33 @@ function App() {
         )}
 
         {activeTab === 'expenses' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Chart Section */}
+            <div className="bg-white rounded-2xl shadow-md p-6 mb-4">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Expenses Over Time</h2>
+              <Chart expenses={expenses} />
+            </div>
+            {/* Transactions Header */}
             <div className="flex items-center justify-between border-b border-slate-200 pb-2">
               <h3 className="text-sm font-bold text-navy-dark uppercase tracking-wider">All Transactions</h3>
-              <span className="text-xs bg-navy text-slate-300 border border-navy-border px-2.5 py-0.5 rounded-full font-medium">
-                {displayedExpenses.length} matches
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs bg-navy text-slate-300 border border-navy-border px-2.5 py-0.5 rounded-full font-medium">
+                  {displayedExpenses.length} matches
+                </span>
+                <button onClick={handleDownloadWeek} className="bg-white hover:bg-gray-100 text-navy-dark border border-gray-300 text-xs px-3 py-1 rounded">
+                  Download Week
+                </button>
+                <button onClick={handleDownloadDay} className="bg-white hover:bg-gray-100 text-navy-dark border border-gray-300 text-xs px-3 py-1 rounded">
+                  Download Today
+                </button>
+              </div>
             </div>
+            {/* Filter Bar */}
             <FilterBar
               filterCategory={filterCategory}
               setFilterCategory={setFilterCategory}
             />
+            {/* Expense List */}
             <ExpenseList
               expenses={displayedExpenses}
               onDelete={removeExpense}
@@ -372,6 +491,53 @@ function App() {
             />
             <div className="max-w-3xl mx-auto">
               <Chart expenses={expenses} />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'incomes' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl shadow-md p-6 mb-4">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">📈 Income Over Last 7 Days</h2>
+              <IncomeChart incomes={incomes} />
+            </div>
+            <div className="bg-white rounded-2xl shadow-md p-6">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-4">
+                <h3 className="text-sm font-bold text-navy-dark uppercase tracking-wider">All Income Records</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs bg-navy text-slate-300 border border-navy-border px-2.5 py-0.5 rounded-full font-medium">
+                    {incomes.length} records
+                  </span>
+                  <button onClick={handleDownloadIncomeWeek} className="bg-white hover:bg-gray-100 text-navy-dark border border-gray-300 text-xs px-3 py-1 rounded">
+                    Download Week
+                  </button>
+                  <button onClick={handleDownloadIncomeMonth} className="bg-white hover:bg-gray-100 text-navy-dark border border-gray-300 text-xs px-3 py-1 rounded">
+                    Download Month
+                  </button>
+                </div>
+              </div>
+              {incomes.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-6">No income records yet. Add your first income!</p>
+              ) : (
+                <ul className="space-y-3">
+                  {incomes.map((inc) => (
+                    <li key={inc._id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                      <div>
+                        <p className="text-sm font-semibold text-navy-dark">{inc.source || inc.title || 'Income'}</p>
+                        <p className="text-xs text-slate-400">{inc.date ? new Date(inc.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold text-green-600">+ Rs. {inc.amount?.toLocaleString()}</span>
+                        <button
+                          onClick={() => removeIncome(inc._id)}
+                          className="text-rose-400 hover:text-rose-600 text-xs transition"
+                          title="Delete"
+                        >✕</button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         )}

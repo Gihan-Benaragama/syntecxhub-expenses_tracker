@@ -46,8 +46,7 @@ const ExpenseForm = ({ onAdd, onClose }) => {
                         onChange={handleChange}
                         placeholder="Expense title"
                         required
-                        className="w-full bg-navy-dark text-slate-100 border border-navy-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition placeholder-slate-500"
-                    />
+                        className="w-full bg-navy-dark text-black border border-navy-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition placeholder-slate-500" />
                 </div>
                 <div>
                     <label className="text-sm text-slate-300 mb-1.5 block font-medium">Amount (Rs.)</label>
@@ -59,8 +58,7 @@ const ExpenseForm = ({ onAdd, onClose }) => {
                         placeholder="0.00"
                         required
                         ref={amountRef}
-                        className="w-full bg-navy-dark text-slate-100 border border-navy-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition placeholder-slate-500"
-                    />
+                        className="w-full bg-navy-dark text-black border border-navy-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition placeholder-slate-500" />
                 </div>
                 <div>
                     <label className="text-sm text-slate-300 mb-1.5 block font-medium">Category</label>
@@ -68,10 +66,11 @@ const ExpenseForm = ({ onAdd, onClose }) => {
                         name="category"
                         value={form.category}
                         onChange={handleChange}
-                        className="w-full bg-navy-dark text-slate-100 border border-navy-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition"
+                        className="w-full bg-white text-black border border-navy-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition"
+
                     >
                         {CATEGORIES.map(cat => (
-                            <option key={cat} value={cat} className="bg-navy-dark text-slate-100">{cat}</option>
+                            <option key={cat} value={cat} className="bg-white text-black">{cat}</option>
                         ))}
                     </select>
                 </div>
@@ -83,7 +82,7 @@ const ExpenseForm = ({ onAdd, onClose }) => {
                         value={form.date}
                         onChange={handleChange}
                         required
-                        className="w-full bg-navy-dark text-slate-100 border border-navy-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition [color-scheme:dark]"
+                        className="w-full bg-navy-dark border border-navy-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition"
                     />
                 </div>
                 <div className="md:col-span-2">
@@ -94,13 +93,12 @@ const ExpenseForm = ({ onAdd, onClose }) => {
                         value={form.description}
                         onChange={handleChange}
                         placeholder="Optional description"
-                        className="w-full bg-navy-dark text-slate-100 border border-navy-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition placeholder-slate-500"
-                    />
+                        className="w-full bg-navy-dark text-black border border-navy-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition placeholder-slate-500" />
                 </div>
             </div>
             <button
                 type="submit"
-                className="mt-2 w-full bg-accent hover:bg-accent-hover text-navy-dark font-bold py-2.5 rounded-lg transition shadow-md shadow-accent/10 hover:shadow-lg hover:shadow-accent/20"
+                className="mt-4 w-full bg-accent hover:bg-accent-hover text-white font-bold text-sm uppercase tracking-wide py-3 px-6 rounded-xl cursor-pointer border border-accent hover:border-accent-hover transition-all duration-200 shadow-lg shadow-accent/20 hover:shadow-xl hover:shadow-accent/30 active:scale-[0.98]"
             >
                 + Add Expense
             </button>
