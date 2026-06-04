@@ -1,0 +1,408 @@
+import { useRef, useState, useMemo, useCallback } from 'react'
+import useExpenses from './hooks/useExpenses'
+import ExpenseForm from './components/ExpenseForm'
+import ExpenseList from './components/ExpenseList'
+import Summary from './components/Summary'
+import FilterBar from './components/FilterBar'
+import Chart from './components/Chart'
+import Modal from './components/Modal'
+import IncomeForm from './components/IncomeForm'
+import Login from './components/Login'
+
+function App() {
+  const {
+    expenses,
+    filteredExpenses,
+    loading,
+    error,
+    total,
+    filteredTotal,
+    filterCategory,
+    setFilterCategory,
+    addExpense,
+    removeExpense,
+    editExpense,
+    incomes,
+    addIncome,
+    removeIncome,
+    totalIncome,
+    remainingBalance
+  } = useExpenses()
+
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('user')
+    return saved ? JSON.parse(saved) : null
+  })
+  const [activeTab, setActiveTab] = useState('dashboard')
+  const [showExpenseModal, setShowExpenseModal] = useState(false)
+  const [showIncomeModal, setShowIncomeModal] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [toastMessage, setToastMessage] = useState('')
+  const topRef = useRef(null)
+
+  const handleLoginSuccess = useCallback((userData) => {
+    localStorage.setItem('user', JSON.stringify(userData))
+    setUser(userData)
+    setToastMessage(`Welcome back, ${userData.name}!`)
+    setTimeout(() => setToastMessage(''), 3000)
+  }, [])
+
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('user')
+    setUser(null)
+    setToastMessage('Logged out successfully.')
+    setTimeout(() => setToastMessage(''), 3000)
+  }, [])
+
+  const displayedExpenses = useMemo(() => {
+    return filteredExpenses.filter(exp => {
+      if (!searchQuery) return true
+      const query = searchQuery.toLowerCase()
+      const titleMatch = exp.title?.toLowerCase().includes(query)
+      const descMatch = exp.description?.toLowerCase().includes(query)
+      return titleMatch || descMatch
+    })
+  }, [filteredExpenses, searchQuery])
+
+  const displayedRecentExpenses = useMemo(() => {
+    return expenses.filter(exp => {
+      if (!searchQuery) return true
+      const query = searchQuery.toLowerCase()
+      const titleMatch = exp.title?.toLowerCase().includes(query)
+      const descMatch = exp.description?.toLowerCase().includes(query)
+      return titleMatch || descMatch
+    }).slice(0, 5)
+  }, [expenses, searchQuery])
+
+  if (!user) {
+    return (
+      <>
+        <Login onLoginSuccess={handleLoginSuccess} />
+        {toastMessage && (
+          <div className="fixed bottom-6 right-6 z-50 bg-[#0B132B] border border-accent/25 text-slate-100 px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 animate-bounce">
+            <span className="text-accent">ℹ️</span> {toastMessage}
+          </div>
+        )}
+      </>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row" ref={topRef}>
+        {/* Sidebar placeholder during load */}
+        <aside className="hidden lg:flex flex-col w-64 bg-navy-dark text-white border-r border-navy-border/50 shrink-0 h-screen sticky top-0">
+          <div className="p-6 border-b border-navy-border/30 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-navy-dark text-lg font-bold shadow-md shadow-accent/25">
+              Syn
+            </div>
+            <div>
+              <h1 className="text-md font-bold tracking-wider leading-none uppercase text-slate-100">Syntecxhub</h1>
+              <span className="text-[10px] text-accent font-semibold tracking-widest uppercase">Expenses</span>
+            </div>
+          </div>
+        </aside>
+
+        {/* Spinner */}
+        <main className="flex-1 flex items-center justify-center p-6">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-500 font-medium">Loading expenses...</p>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row" ref={topRef}>
+      {/* Desktop Sidebar (30% Navy with dark blue color overlay and gradients) */}
+      <aside className="relative hidden lg:flex flex-col w-64 bg-[#0A1128] text-white border-r border-[#1B2D54]/50 shrink-0 sticky top-0 h-screen overflow-hidden">
+        {/* Dark Blue Color Tint Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#101F42]/70 via-transparent to-[#0A1128]/95 pointer-events-none"></div>
+        {/* Ambient Color Glow Overlays */}
+        <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full bg-[#00B4D8]/20 blur-[100px] pointer-events-none"></div>
+        <div className="absolute -bottom-40 -right-40 w-80 h-80 rounded-full bg-[#6366F1]/15 blur-[100px] pointer-events-none"></div>
+
+        <div className="relative z-10 flex flex-col h-full">
+          {/* Logo/Branding */}
+          <div className="p-6 border-b border-navy-border/30 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-navy-dark text-lg font-bold shadow-md shadow-accent/25">
+              Syn
+            </div>
+            <div>
+              <h1 className="text-md font-bold tracking-wider leading-none uppercase text-slate-100">Syntecxhub</h1>
+              <span className="text-[10px] text-accent font-semibold tracking-widest uppercase">Expenses</span>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-6 space-y-1.5">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${activeTab === 'dashboard'
+                  ? 'bg-accent text-navy-dark shadow-md shadow-accent/15'
+                  : 'text-slate-400 hover:bg-navy/60 hover:text-slate-100'
+                }`}
+            >
+              <span>📊</span> Dashboard
+            </button>
+            <button
+              onClick={() => setActiveTab('expenses')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${activeTab === 'expenses'
+                  ? 'bg-accent text-navy-dark shadow-md shadow-accent/15'
+                  : 'text-slate-400 hover:bg-navy/60 hover:text-slate-100'
+                }`}
+            >
+              <span>💸</span> Expenses
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${activeTab === 'analytics'
+                  ? 'bg-accent text-navy-dark shadow-md shadow-accent/15'
+                  : 'text-slate-400 hover:bg-navy/60 hover:text-slate-100'
+                }`}
+            >
+              <span>📈</span> Analytics
+            </button>
+          </nav>
+
+          {/* Quick Stats Box */}
+          <div className="p-4 m-4 bg-navy/65 backdrop-blur-md border border-navy-border/80 rounded-xl">
+            <p className="text-xs text-slate-400 font-medium">Total Spent</p>
+            <p className="text-xl font-bold text-accent mt-0.5">Rs. {total.toLocaleString()}</p>
+            <div className="w-full bg-navy-dark rounded-full h-1.5 mt-2 border border-navy-border/50">
+              <div
+                className="bg-accent h-1.5 rounded-full transition-all duration-500"
+                style={{ width: `${Math.min((total / 100000) * 100, 100)}%` }}
+              ></div>
+            </div>
+            <div className="flex justify-between items-center mt-2.5 text-[10px] text-slate-400">
+              <span>Limit: Rs. 100,000</span>
+              <span className={`font-semibold ${remainingBalance >= 0 ? 'text-accent' : 'text-rose-400'}`}>
+                Bal: Rs. {remainingBalance.toLocaleString()}
+              </span>
+            </div>
+          </div>
+
+          {/* User Card */}
+          <div className="p-4 border-t border-navy-border/30 flex items-center gap-3 bg-navy-dark/40">
+            <div className="w-9 h-9 rounded-full bg-navy border border-navy-border flex items-center justify-center font-bold text-slate-300">
+              A
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-slate-200 truncate">Admin User</p>
+              <p className="text-[10px] text-slate-400 truncate font-mono uppercase tracking-wider">Sync Active</p>
+            </div>
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shrink-0"></div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Mobile Nav Header */}
+      <header className="lg:hidden bg-navy-dark text-white border-b border-navy-border/30 sticky top-0 z-40 px-4 py-4 shadow-md flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center text-navy-dark text-sm font-bold shadow-md shadow-accent/20">
+            Syn
+          </div>
+          <span className="text-sm font-bold tracking-wider uppercase text-slate-100">Syntecxhub</span>
+        </div>
+
+        {/* Navigation Tabs on Mobile */}
+        <div className="flex bg-navy border border-navy-border rounded-lg p-0.5 gap-0.5">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`px-3 py-1 rounded text-xs font-semibold transition ${activeTab === 'dashboard' ? 'bg-accent text-navy-dark font-bold' : 'text-slate-400'
+              }`}
+          >
+            Dash
+          </button>
+          <button
+            onClick={() => setActiveTab('expenses')}
+            className={`px-3 py-1 rounded text-xs font-semibold transition ${activeTab === 'expenses' ? 'bg-accent text-navy-dark font-bold' : 'text-slate-400'
+              }`}
+          >
+            List
+          </button>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`px-3 py-1 rounded text-xs font-semibold transition ${activeTab === 'analytics' ? 'bg-accent text-navy-dark font-bold' : 'text-slate-400'
+              }`}
+          >
+            Charts
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content Area (60% Light Gray Canvas) */}
+      <main className="flex-1 overflow-y-auto px-4 py-6 md:px-8 max-w-7xl mx-auto w-full">
+        {/* Top welcome banner */}
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6 border-b border-slate-200 pb-4 relative">
+          <div>
+            <h2 className="text-2xl font-extrabold text-navy-dark tracking-tight">
+              {activeTab === 'dashboard' && 'Dashboard Overview'}
+              {activeTab === 'expenses' && 'Expense Records'}
+              {activeTab === 'analytics' && 'Expense Analytics'}
+            </h2>
+          </div>
+
+          {/* Right side: Sync text floated in top-right, Action Buttons & Search Bar directly below it */}
+          <div className="flex flex-col items-start md:items-end gap-2.5 shrink-0">
+
+
+            <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+              {/* Search Bar next to action buttons */}
+              <div className="relative w-40 sm:w-48 md:w-64">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">
+                  🔍
+                </span>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search transactions..."
+                  className="w-full pl-8 pr-8 py-2 bg-white text-slate-800 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition placeholder-slate-400 shadow-sm"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {activeTab !== 'analytics' && (
+                <>
+                  <button
+                    onClick={() => setShowExpenseModal(true)}
+                    className="bg-accent hover:bg-accent-hover text-navy-dark font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-accent/15 whitespace-nowrap"
+                  >
+                    <span>💸</span> Add new expenses
+                  </button>
+                  <button
+                    onClick={() => setShowIncomeModal(true)}
+                    className="bg-white hover:bg-slate-50 text-blue-600 border border-slate-200 font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow-sm whitespace-nowrap"
+                  >
+                    <span>💰</span> New Income
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="bg-rose-500/10 border border-rose-500/20 text-rose-500 px-4 py-3 rounded-xl mb-6 text-sm flex items-center gap-2 font-medium">
+            <span>⚠️</span> {error}
+          </div>
+        )}
+
+        {/* Tab Contents */}
+        {activeTab === 'dashboard' && (
+          <div className="space-y-6">
+            {/* Summary Row */}
+            <Summary
+              total={total}
+              filteredTotal={filteredTotal}
+              filterCategory={filterCategory}
+              expenses={expenses}
+              totalIncome={totalIncome}
+              remainingBalance={remainingBalance}
+              incomes={incomes}
+            />
+
+            {/* Grid Layout: Chart and Recent Transactions side-by-side on desktop */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+              <Chart expenses={expenses} />
+
+              {/* Recent Transactions */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <h3 className="text-sm font-bold text-navy-dark uppercase tracking-wider">Recent Transactions</h3>
+                  <button
+                    onClick={() => setActiveTab('expenses')}
+                    className="text-xs text-accent hover:text-accent-hover font-bold transition duration-150"
+                  >
+                    View All →
+                  </button>
+                </div>
+                <ExpenseList
+                  expenses={displayedRecentExpenses}
+                  onDelete={removeExpense}
+                  onEdit={editExpense}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'expenses' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+              <h3 className="text-sm font-bold text-navy-dark uppercase tracking-wider">All Transactions</h3>
+              <span className="text-xs bg-navy text-slate-300 border border-navy-border px-2.5 py-0.5 rounded-full font-medium">
+                {displayedExpenses.length} matches
+              </span>
+            </div>
+            <FilterBar
+              filterCategory={filterCategory}
+              setFilterCategory={setFilterCategory}
+            />
+            <ExpenseList
+              expenses={displayedExpenses}
+              onDelete={removeExpense}
+              onEdit={editExpense}
+            />
+          </div>
+        )}
+
+        {activeTab === 'analytics' && (
+          <div className="space-y-6">
+            <Summary
+              total={total}
+              filteredTotal={filteredTotal}
+              filterCategory={filterCategory}
+              expenses={expenses}
+              totalIncome={totalIncome}
+              remainingBalance={remainingBalance}
+              incomes={incomes}
+            />
+            <div className="max-w-3xl mx-auto">
+              <Chart expenses={expenses} />
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Add Expense Modal */}
+      <Modal
+        isOpen={showExpenseModal}
+        onClose={() => setShowExpenseModal(false)}
+        title="Add New Expense"
+      >
+        <ExpenseForm onAdd={addExpense} onClose={() => setShowExpenseModal(false)} />
+      </Modal>
+
+      {/* Add Income Modal */}
+      <Modal
+        isOpen={showIncomeModal}
+        onClose={() => setShowIncomeModal(false)}
+        title="Add New Income"
+      >
+        <IncomeForm onAdd={addIncome} onClose={() => setShowIncomeModal(false)} />
+      </Modal>
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-[#0B132B] border border-accent/25 text-slate-100 px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 animate-bounce">
+          <span className="text-accent">ℹ️</span> {toastMessage}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default App
