@@ -65,10 +65,12 @@ const Summary = ({ total, filteredTotal, filterCategory, expenses, totalIncome =
             <div className="bg-white border border-slate-100 text-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition duration-200">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Income</p>
                 <p className="text-3xl font-extrabold text-emerald-600 mt-1.5">Rs. {totalIncome.toLocaleString()}</p>
+            {totalIncome > 0 && (
                 <p className="text-xs text-slate-400 mt-2 flex items-center gap-1.5">
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     Income Source
                 </p>
+            )}
             </div>
 
             {/* Total Expenses (White Card / Rose Text) */}
@@ -92,11 +94,14 @@ const Summary = ({ total, filteredTotal, filterCategory, expenses, totalIncome =
                     {remainingBalance >= 0 ? 'Net positive' : 'Net deficit'}
                 </p>
             </div>
-
-
-
-
-        </div>
+            {/* Savings Rate (White Card / Green Text) */}
+            <div className="bg-white border border-slate-100 text-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition duration-200">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Savings Rate</p>
+                <p className="text-3xl font-extrabold text-green-600 mt-1.5">
+                    {totalIncome ? ((totalIncome - total) / totalIncome * 100).toFixed(2) : 0}%
+                </p>
+                <p className="text-xs text-slate-400 mt-2">Portion of income saved</p>
+            </div>    </div>
     )
 }
 

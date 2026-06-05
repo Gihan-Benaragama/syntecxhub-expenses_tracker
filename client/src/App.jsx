@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo, useCallback } from 'react'
+import { useRef, useState, useMemo, useCallback, useEffect } from 'react'
 import useExpenses from './hooks/useExpenses'
 import ExpenseForm from './components/ExpenseForm'
 import ExpenseList from './components/ExpenseList'
@@ -7,7 +7,11 @@ import FilterBar from './components/FilterBar'
 import Chart from './components/Chart'
 import PieChart from './components/PieChart'
 import Modal from './components/Modal'
-import IncomeChart from './components/IncomeChart'
+import IncomeChart from './components/IncomeChart';
+import ComparisonChart from './components/ComparisonChart';
+import DailyComparisonChart from './components/DailyComparisonChart';
+import CumulativeChart from './components/CumulativeChart';
+import CategorySpendingChart from './components/CategorySpendingChart';
 import IncomeForm from './components/IncomeForm'
 import Login from './components/Login'
 
@@ -35,12 +39,18 @@ function App() {
     const saved = localStorage.getItem('user')
     return saved ? JSON.parse(saved) : null
   })
-  const [activeTab, setActiveTab] = useState('dashboard')
-  const [showExpenseModal, setShowExpenseModal] = useState(false)
-  const [showIncomeModal, setShowIncomeModal] = useState(false)
+  const [activeTab, setActiveTab] = useState('dashboard');
+  // Refresh trigger for incomes updates
+  const [_refresh, setRefresh] = useState(0);
+  useEffect(() => {
+    setRefresh(r => r + 1);
+  }, [incomes]);
+  const [showIncomeModal, setShowIncomeModal] = useState(false);
+    const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('')
   const [toastMessage, setToastMessage] = useState('')
   const topRef = useRef(null)
+    
 
   const handleLoginSuccess = useCallback((userData) => {
     localStorage.setItem('user', JSON.stringify(userData))
@@ -89,7 +99,7 @@ function App() {
       const d = new Date(exp.date)
       return d >= monday && d <= sunday
     })
-    const filename = `expenses_week_${monday.toISOString().slice(0,10)}.csv`
+    const filename = `expenses_week_${monday.toISOString().slice(0, 10)}.csv`
     downloadCSV(weekExpenses, filename)
   }
 
@@ -121,7 +131,7 @@ function App() {
       const d = new Date(inc.date + 'T00:00:00')
       return d >= monday && d <= sunday
     })
-    const filename = `income_week_${monday.toISOString().slice(0,10)}.csv`
+    const filename = `income_week_${monday.toISOString().slice(0, 10)}.csv`
     downloadCSV(weekIncomes, filename)
   }
 
@@ -158,7 +168,21 @@ function App() {
       const descMatch = exp.description?.toLowerCase().includes(query)
       return titleMatch || descMatch
     }).slice(0, 5)
-  }, [expenses, searchQuery])
+  }, [expenses, searchQuery]);
+
+  // Filter incomes for the last 7 days
+  const filteredIncomes = useMemo(() => {
+    const today = new Date();
+    const start = new Date(today);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(today.getDate() - 6);
+    return incomes.filter(inc => {
+      if (!inc.date) return false;
+      const d = new Date(inc.date);
+      d.setHours(0, 0, 0, 0);
+      return d >= start && d <= today;
+    });
+  }, [incomes]);
 
   if (!user) {
     return (
@@ -227,8 +251,8 @@ function App() {
             <button
               onClick={() => setActiveTab('dashboard')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${activeTab === 'dashboard'
-                  ? 'bg-accent text-navy-dark shadow-md shadow-accent/15'
-                  : 'text-slate-400 hover:bg-navy/60 hover:text-slate-100'
+                ? 'bg-accent text-navy-dark shadow-md shadow-accent/15'
+                : 'text-slate-400 hover:bg-navy/60 hover:text-slate-100'
                 }`}
             >
               <span>📊</span> Dashboard
@@ -236,8 +260,8 @@ function App() {
             <button
               onClick={() => setActiveTab('expenses')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${activeTab === 'expenses'
-                  ? 'bg-accent text-navy-dark shadow-md shadow-accent/15'
-                  : 'text-slate-400 hover:bg-navy/60 hover:text-slate-100'
+                ? 'bg-accent text-navy-dark shadow-md shadow-accent/15'
+                : 'text-slate-400 hover:bg-navy/60 hover:text-slate-100'
                 }`}
             >
               <span>💸</span> Expenses
@@ -245,8 +269,8 @@ function App() {
             <button
               onClick={() => setActiveTab('incomes')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${activeTab === 'incomes'
-                  ? 'bg-accent text-navy-dark shadow-md shadow-accent/15'
-                  : 'text-slate-400 hover:bg-navy/60 hover:text-slate-100'
+                ? 'bg-accent text-navy-dark shadow-md shadow-accent/15'
+                : 'text-slate-400 hover:bg-navy/60 hover:text-slate-100'
                 }`}
             >
               <span>💰</span> Incomes
@@ -254,8 +278,8 @@ function App() {
             <button
               onClick={() => setActiveTab('analytics')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${activeTab === 'analytics'
-                  ? 'bg-accent text-navy-dark shadow-md shadow-accent/15'
-                  : 'text-slate-400 hover:bg-navy/60 hover:text-slate-100'
+                ? 'bg-accent text-navy-dark shadow-md shadow-accent/15'
+                : 'text-slate-400 hover:bg-navy/60 hover:text-slate-100'
                 }`}
             >
               <span>📈</span> Analytics
@@ -480,6 +504,7 @@ function App() {
 
         {activeTab === 'analytics' && (
           <div className="space-y-6">
+
             <Summary
               total={total}
               filteredTotal={filteredTotal}
@@ -489,24 +514,30 @@ function App() {
               remainingBalance={remainingBalance}
               incomes={incomes}
             />
+            <DailyComparisonChart expenses={expenses} incomes={incomes} />
             <div className="max-w-3xl mx-auto">
-              <Chart expenses={expenses} />
+              <CumulativeChart expenses={expenses} incomes={incomes} />
             </div>
+<div className="w-full">
+  <CategorySpendingChart expenses={expenses} totalIncome={totalIncome} />
+</div>
           </div>
         )}
 
         {activeTab === 'incomes' && (
-          <div className="space-y-6">
+          <>
+            {/* Income Chart */}
             <div className="bg-white rounded-2xl shadow-md p-6 mb-4">
               <h2 className="text-xl font-bold text-gray-800 mb-4">📈 Income Over Last 7 Days</h2>
-              <IncomeChart incomes={incomes} />
+              <IncomeChart incomes={filteredIncomes} />
             </div>
+            {/* Income List for last 7 days */}
             <div className="bg-white rounded-2xl shadow-md p-6">
               <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-4">
-                <h3 className="text-sm font-bold text-navy-dark uppercase tracking-wider">All Income Records</h3>
+                <h3 className="text-sm font-bold text-navy-dark uppercase tracking-wider">Income Records (Last 7 Days)</h3>
                 <div className="flex items-center gap-2">
                   <span className="text-xs bg-navy text-slate-300 border border-navy-border px-2.5 py-0.5 rounded-full font-medium">
-                    {incomes.length} records
+                    {filteredIncomes.length} records
                   </span>
                   <button onClick={handleDownloadIncomeWeek} className="bg-white hover:bg-gray-100 text-navy-dark border border-gray-300 text-xs px-3 py-1 rounded">
                     Download Week
@@ -516,11 +547,11 @@ function App() {
                   </button>
                 </div>
               </div>
-              {incomes.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-6">No income records yet. Add your first income!</p>
+              {filteredIncomes.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-6">No income records for the last 7 days. Add your recent income!</p>
               ) : (
                 <ul className="space-y-3">
-                  {incomes.map((inc) => (
+                  {filteredIncomes.map((inc) => (
                     <li key={inc._id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
                       <div>
                         <p className="text-sm font-semibold text-navy-dark">{inc.source || inc.title || 'Income'}</p>
@@ -528,18 +559,14 @@ function App() {
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-bold text-green-600">+ Rs. {inc.amount?.toLocaleString()}</span>
-                        <button
-                          onClick={() => removeIncome(inc._id)}
-                          className="text-rose-400 hover:text-rose-600 text-xs transition"
-                          title="Delete"
-                        >✕</button>
+                        <button onClick={() => removeIncome(inc._id)} className="text-rose-400 hover:text-rose-600 text-xs transition" title="Delete">✕</button>
                       </div>
                     </li>
                   ))}
                 </ul>
               )}
             </div>
-          </div>
+          </>
         )}
       </main>
 

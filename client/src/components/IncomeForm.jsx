@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 
 const IncomeForm = ({ onAdd, onClose }) => {
+    const [error, setError] = useState('');
     const [form, setForm] = useState({
         title: '',
         amount: '',
@@ -16,10 +17,20 @@ const IncomeForm = ({ onAdd, onClose }) => {
 
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault()
-        if (!form.title || !form.amount) return
+        // Basic client-side validation
+        if (!form.title) {
+            setError('Title is required');
+            return;
+        }
+        const amountNum = parseFloat(form.amount);
+        if (isNaN(amountNum) || amountNum <= 0) {
+            setError('Amount must be a positive number');
+            return;
+        }
+        setError('');
         await onAdd({
             ...form,
-            amount: parseFloat(form.amount)
+            amount: amountNum
         })
         setForm({
             title: '',
@@ -31,6 +42,7 @@ const IncomeForm = ({ onAdd, onClose }) => {
     }, [form, onAdd, onClose])
 
     return (
+        <>{error && <p className="text-red-500 mb-2">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
             <div>
                 <label className="text-sm text-slate-300 mb-1.5 block font-medium">Income Source</label>
@@ -83,11 +95,11 @@ const IncomeForm = ({ onAdd, onClose }) => {
             </div>
             <button
                 type="submit"
-                className="mt-4 w-full bg-accent hover:bg-accent-hover text-white font-bold text-sm uppercase tracking-wide py-3 px-6 rounded-xl cursor-pointer border border-accent hover:border-accent-hover transition-all duration-200 shadow-lg shadow-accent/20 hover:shadow-xl hover:shadow-accent/30 active:scale-[0.98]"
-            >
+                className="mt-4 w-full bg-accent hover:bg-accent-hover text-white font-bold text-sm uppercase tracking-wide py-3 px-6 rounded-xl cursor-pointer border border-accent hover:border-accent-hover transition-all duration-200 shadow-lg shadow-accent/20 hover:shadow-xl hover:shadow-accent/30 active:scale-[0.98]">
                 + Add Income
             </button>
         </form>
+    </>
     )
 }
 

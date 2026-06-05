@@ -13,11 +13,19 @@ export const getExpenses = async (req, res) => {
 // POST add new expense
 export const createExpense = async (req, res) => {
     try {
-        const expense = new Expense(req.body)
-        const saved = await expense.save()
-        res.status(201).json(saved)
+        const { title, amount } = req.body;
+        if (!title || title.trim() === '') {
+            return res.status(400).json({ message: 'Title is required' });
+        }
+        const amountNum = parseFloat(amount);
+        if (isNaN(amountNum) || amountNum <= 0) {
+            return res.status(400).json({ message: 'Amount must be a positive number' });
+        }
+        const expense = new Expense({ ...req.body, amount: amountNum });
+        const saved = await expense.save();
+        res.status(201).json(saved);
     } catch (err) {
-        res.status(400).json({ message: err.message })
+        res.status(500).json({ message: err.message });
     }
 }
 

@@ -58,7 +58,7 @@ const Chart = ({ expenses }) => {
                           const d = new Date(date);
                           return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
                         }} />
-                        <YAxis tickFormatter={(value) => `Rs. ${value / 1000}k`} />
+                        <YAxis domain={[0, 'dataMax']} tickFormatter={(value) => `Rs. ${value / 1000}k`} />
                         <Tooltip formatter={(value) => `Rs. ${value.toLocaleString()}`} labelFormatter={(date) => {
                           const d = new Date(date);
                           return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', weekday: 'short' });

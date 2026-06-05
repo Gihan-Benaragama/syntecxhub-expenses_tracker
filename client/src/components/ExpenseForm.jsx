@@ -3,13 +3,14 @@ import { useState, useRef, useCallback } from 'react'
 const CATEGORIES = ['Food', 'Transport', 'Shopping', 'Bills', 'Health', 'Education', 'Other']
 
 const ExpenseForm = ({ onAdd, onClose }) => {
+    const [error, setError] = useState('');
     const [form, setForm] = useState({
         title: '',
         amount: '',
         category: 'Food',
         description: '',
         date: new Date().toISOString().split('T')[0]
-    })
+    });
 
     const amountRef = useRef(null)
 
@@ -18,23 +19,35 @@ const ExpenseForm = ({ onAdd, onClose }) => {
     }, [])
 
     const handleSubmit = useCallback(async (e) => {
-        e.preventDefault()
-        if (!form.title || !form.amount) return
+        e.preventDefault();
+        // Validation
+        if (!form.title) {
+            setError('Title is required');
+            return;
+        }
+        const amountNum = parseFloat(form.amount);
+        if (isNaN(amountNum) || amountNum <= 0) {
+            setError('Amount must be a positive number');
+            return;
+        }
+        setError('');
         await onAdd({
             ...form,
-            amount: parseFloat(form.amount)
-        })
+            amount: amountNum
+        });
         setForm({
             title: '',
             amount: '',
             category: 'Food',
             description: '',
             date: new Date().toISOString().split('T')[0]
-        })
-        if (onClose) onClose()
-    }, [form, onAdd, onClose])
+        });
+        if (onClose) onClose();
+    }, [form, onAdd, onClose]);
 
     return (
+        <>
+        {error && <p className="text-red-500 mb-2">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -103,7 +116,8 @@ const ExpenseForm = ({ onAdd, onClose }) => {
                 + Add Expense
             </button>
         </form>
-    )
+    </>
+  )
 }
 
 export default ExpenseForm

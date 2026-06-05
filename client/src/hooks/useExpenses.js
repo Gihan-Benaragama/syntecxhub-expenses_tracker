@@ -94,8 +94,8 @@ const useExpenses = () => {
     }, [])
 
     const removeIncome = useCallback((id) => {
-        setIncomes(prev => prev.filter(inc => inc._id !== id))
-    }, [])
+        setIncomes(prev => prev.filter(inc => inc._id !== id));
+    }, []);
 
     const totalIncome = useMemo(() => {
         return incomes.reduce((sum, inc) => sum + inc.amount, 0)
