@@ -1,9 +1,9 @@
 import Expense from '../models/Expense.js'
 
-// GET all expenses
+// GET all expenses for logged in user
 export const getExpenses = async (req, res) => {
     try {
-        const expenses = await Expense.find().sort({ date: -1 })
+        const expenses = await Expense.find({ user: req.user.id }).sort({ date: -1 })
         res.json(expenses)
     } catch (err) {
         res.status(500).json({ message: err.message })
@@ -21,7 +21,11 @@ export const createExpense = async (req, res) => {
         if (isNaN(amountNum) || amountNum <= 0) {
             return res.status(400).json({ message: 'Amount must be a positive number' });
         }
-        const expense = new Expense({ ...req.body, amount: amountNum });
+        const expense = new Expense({ 
+            ...req.body, 
+            amount: amountNum,
+            user: req.user.id 
+        });
         const saved = await expense.save();
         res.status(201).json(saved);
     } catch (err) {
@@ -32,6 +36,16 @@ export const createExpense = async (req, res) => {
 // DELETE expense
 export const deleteExpense = async (req, res) => {
     try {
+        const expense = await Expense.findById(req.params.id)
+        if (!expense) {
+            return res.status(404).json({ message: 'Expense not found' })
+        }
+
+        // Check user ownership
+        if (expense.user.toString() !== req.user.id) {
+            return res.status(401).json({ message: 'User not authorized' })
+        }
+
         await Expense.findByIdAndDelete(req.params.id)
         res.json({ message: 'Expense deleted!' })
     } catch (err) {
@@ -42,6 +56,16 @@ export const deleteExpense = async (req, res) => {
 // PUT update expense
 export const updateExpense = async (req, res) => {
     try {
+        const expense = await Expense.findById(req.params.id)
+        if (!expense) {
+            return res.status(404).json({ message: 'Expense not found' })
+        }
+
+        // Check user ownership
+        if (expense.user.toString() !== req.user.id) {
+            return res.status(401).json({ message: 'User not authorized' })
+        }
+
         const updated = await Expense.findByIdAndUpdate(
             req.params.id,
             req.body,

@@ -65,12 +65,12 @@ const Summary = ({ total, filteredTotal, filterCategory, expenses, totalIncome =
             <div className="bg-white border border-slate-100 text-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition duration-200">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Income</p>
                 <p className="text-3xl font-extrabold text-emerald-600 mt-1.5">Rs. {totalIncome.toLocaleString()}</p>
-            {totalIncome > 0 && (
-                <p className="text-xs text-slate-400 mt-2 flex items-center gap-1.5">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Income Source
-                </p>
-            )}
+                {totalIncome > 0 && (
+                    <p className="text-xs text-slate-400 mt-2 flex items-center gap-1.5">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Income Source
+                    </p>
+                )}
             </div>
 
             {/* Total Expenses (White Card / Rose Text) */}

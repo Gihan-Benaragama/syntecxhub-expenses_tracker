@@ -4,6 +4,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import dns from 'dns'
 import expenseRoutes from './routes/expenses.js'
+import userRoutes from './routes/userRoute.js'
 
 // Fix for Node.js querySrv ECONNREFUSED error on some Windows/VPN environments.
 // If the detected DNS server is localhost/loopback, fall back to Google & Cloudflare DNS.
@@ -21,6 +22,7 @@ app.use(cors())
 app.use(express.json())
 
 // Routes
+app.use('/api/users', userRoutes)
 app.use('/api/expenses', expenseRoutes)
 
 // Test route

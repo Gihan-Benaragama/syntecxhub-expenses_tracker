@@ -16,8 +16,14 @@ import IncomeForm from './components/IncomeForm'
 import Login from './components/Login'
 
 function App() {
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('user')
+    return saved ? JSON.parse(saved) : null
+  })
+
   const {
     expenses,
+    periodExpenses,
     filteredExpenses,
     loading,
     error,
@@ -25,20 +31,19 @@ function App() {
     filteredTotal,
     filterCategory,
     setFilterCategory,
+    timeRange,
+    setTimeRange,
     addExpense,
     removeExpense,
     editExpense,
     incomes,
+    periodIncomes,
     addIncome,
     removeIncome,
     totalIncome,
     remainingBalance
-  } = useExpenses()
+  } = useExpenses(user)
 
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('user')
-    return saved ? JSON.parse(saved) : null
-  })
   const [activeTab, setActiveTab] = useState('dashboard');
   // Refresh trigger for incomes updates
   const [_refresh, setRefresh] = useState(0);
@@ -46,11 +51,11 @@ function App() {
     setRefresh(r => r + 1);
   }, [incomes]);
   const [showIncomeModal, setShowIncomeModal] = useState(false);
-    const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('')
   const [toastMessage, setToastMessage] = useState('')
   const topRef = useRef(null)
-    
+
 
   const handleLoginSuccess = useCallback((userData) => {
     localStorage.setItem('user', JSON.stringify(userData))
@@ -161,28 +166,23 @@ function App() {
   }, [filteredExpenses, searchQuery])
 
   const displayedRecentExpenses = useMemo(() => {
-    return expenses.filter(exp => {
+    return periodExpenses.filter(exp => {
       if (!searchQuery) return true
       const query = searchQuery.toLowerCase()
       const titleMatch = exp.title?.toLowerCase().includes(query)
       const descMatch = exp.description?.toLowerCase().includes(query)
       return titleMatch || descMatch
     }).slice(0, 5)
-  }, [expenses, searchQuery]);
+  }, [periodExpenses, searchQuery]);
 
-  // Filter incomes for the last 7 days
-  const filteredIncomes = useMemo(() => {
-    const today = new Date();
-    const start = new Date(today);
-    start.setHours(0, 0, 0, 0);
-    start.setDate(today.getDate() - 6);
-    return incomes.filter(inc => {
-      if (!inc.date) return false;
-      const d = new Date(inc.date);
-      d.setHours(0, 0, 0, 0);
-      return d >= start && d <= today;
-    });
-  }, [incomes]);
+  const displayedIncomes = useMemo(() => {
+    return periodIncomes.filter(inc => {
+      if (!searchQuery) return true
+      const query = searchQuery.toLowerCase()
+      const sourceMatch = (inc.source || inc.title || '').toLowerCase().includes(query)
+      return sourceMatch
+    })
+  }, [periodIncomes, searchQuery]);
 
   if (!user) {
     return (
@@ -306,56 +306,69 @@ function App() {
 
           {/* User Card */}
           <div className="p-4 border-t border-navy-border/30 flex items-center gap-3 bg-navy-dark/40">
-            <div className="w-9 h-9 rounded-full bg-navy border border-navy-border flex items-center justify-center font-bold text-slate-300">
-              A
+            <div className="w-9 h-9 rounded-full bg-navy border border-navy-border flex items-center justify-center font-bold text-accent text-sm shrink-0">
+              {user?.avatar || user?.name?.charAt(0).toUpperCase() || 'U'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-slate-200 truncate">Admin User</p>
-              <p className="text-[10px] text-slate-400 truncate font-mono uppercase tracking-wider">Sync Active</p>
+              <p className="text-xs font-semibold text-slate-200 truncate">{user?.name || 'User'}</p>
+              <p className="text-[10px] text-slate-400 truncate tracking-wide">{user?.email}</p>
             </div>
-            <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shrink-0"></div>
+            <button
+              onClick={handleLogout}
+              className="text-slate-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition duration-150 text-sm shrink-0"
+              title="Logout"
+            >
+              🚪
+            </button>
           </div>
         </div>
       </aside>
 
       {/* Mobile Nav Header */}
-      <header className="lg:hidden bg-navy-dark text-white border-b border-navy-border/30 sticky top-0 z-40 px-4 py-4 shadow-md flex items-center justify-between">
+      <header className="lg:hidden bg-navy-dark text-white border-b border-navy-border/30 sticky top-0 z-40 px-4 py-3 shadow-md flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center text-navy-dark text-sm font-bold shadow-md shadow-accent/20">
-            Syn
+          <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center text-navy-dark text-xs font-bold shadow-md shadow-accent/20 shrink-0">
+            {user?.avatar || user?.name?.charAt(0).toUpperCase() || 'U'}
           </div>
-          <span className="text-sm font-bold tracking-wider uppercase text-slate-100">Syntecxhub</span>
+          <span className="text-xs font-bold tracking-wider uppercase text-slate-100 truncate max-w-[80px]">{user?.name || 'User'}</span>
         </div>
 
         {/* Navigation Tabs on Mobile */}
-        <div className="flex bg-navy border border-navy-border rounded-lg p-0.5 gap-0.5">
+        <div className="flex bg-navy border border-navy-border rounded-lg p-0.5 gap-0.5 items-center">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`px-3 py-1 rounded text-xs font-semibold transition ${activeTab === 'dashboard' ? 'bg-accent text-navy-dark font-bold' : 'text-slate-400'
+            className={`px-2 py-1 rounded text-xs font-semibold transition ${activeTab === 'dashboard' ? 'bg-accent text-navy-dark font-bold' : 'text-slate-400'
               }`}
           >
             Dash
           </button>
           <button
             onClick={() => setActiveTab('expenses')}
-            className={`px-3 py-1 rounded text-xs font-semibold transition ${activeTab === 'expenses' ? 'bg-accent text-navy-dark font-bold' : 'text-slate-400'
+            className={`px-2 py-1 rounded text-xs font-semibold transition ${activeTab === 'expenses' ? 'bg-accent text-navy-dark font-bold' : 'text-slate-400'
               }`}
           >
             List
           </button>
           <button
             onClick={() => setActiveTab('incomes')}
-            className={`px-3 py-1 rounded text-xs font-semibold transition ${activeTab === 'incomes' ? 'bg-accent text-navy-dark font-bold' : 'text-slate-400'
+            className={`px-2 py-1 rounded text-xs font-semibold transition ${activeTab === 'incomes' ? 'bg-accent text-navy-dark font-bold' : 'text-slate-400'
               }`}
           >
             Income
           </button>
           <button
             onClick={() => setActiveTab('analytics')}
-            className={`px-3 py-1 rounded text-xs font-semibold transition ${activeTab === 'analytics' ? 'bg-accent text-navy-dark font-bold' : 'text-slate-400'
+            className={`px-2 py-1 rounded text-xs font-semibold transition ${activeTab === 'analytics' ? 'bg-accent text-navy-dark font-bold' : 'text-slate-400'
               }`}
           >
             Charts
+          </button>
+          <button
+            onClick={handleLogout}
+            className="px-2 py-1 rounded text-xs text-rose-400 hover:text-rose-600 transition duration-150"
+            title="Logout"
+          >
+            🚪
           </button>
         </div>
       </header>
@@ -371,6 +384,22 @@ function App() {
               {activeTab === 'incomes' && 'Income Records'}
               {activeTab === 'analytics' && 'Expense Analytics'}
             </h2>
+            {/* Global Time Range Selector */}
+            <div className="flex bg-slate-100 border border-slate-200 rounded-xl p-1 gap-1 mt-3 w-fit">
+              {['This Week', 'This Month', 'Last 3 Months', 'Last 6 Months', 'This Year'].map((range) => (
+                <button
+                  key={range}
+                  onClick={() => setTimeRange(range)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                    timeRange === range
+                      ? 'bg-white text-[#1b62cd] shadow-sm font-bold border border-slate-200/50'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  {range}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Right side: Sync text floated in top-right, Action Buttons & Search Bar directly below it */}
@@ -435,15 +464,15 @@ function App() {
               total={total}
               filteredTotal={filteredTotal}
               filterCategory={filterCategory}
-              expenses={expenses}
+              expenses={periodExpenses}
               totalIncome={totalIncome}
               remainingBalance={remainingBalance}
-              incomes={incomes}
+              incomes={periodIncomes}
             />
 
             {/* Grid Layout: Chart and Recent Transactions side-by-side on desktop */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-              <PieChart expenses={expenses} />
+              <PieChart expenses={periodExpenses} />
 
               {/* Recent Transactions */}
               <div className="space-y-3">
@@ -469,10 +498,7 @@ function App() {
         {activeTab === 'expenses' && (
           <div className="space-y-6">
             {/* Chart Section */}
-            <div className="bg-white rounded-2xl shadow-md p-6 mb-4">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Expenses Over Time</h2>
-              <Chart expenses={expenses} />
-            </div>
+            <Chart expenses={periodExpenses} timeRange={timeRange} />
             {/* Transactions Header */}
             <div className="flex items-center justify-between border-b border-slate-200 pb-2">
               <h3 className="text-sm font-bold text-navy-dark uppercase tracking-wider">All Transactions</h3>
@@ -509,18 +535,18 @@ function App() {
               total={total}
               filteredTotal={filteredTotal}
               filterCategory={filterCategory}
-              expenses={expenses}
+              expenses={periodExpenses}
               totalIncome={totalIncome}
               remainingBalance={remainingBalance}
-              incomes={incomes}
+              incomes={periodIncomes}
             />
-            <DailyComparisonChart expenses={expenses} incomes={incomes} />
+            <DailyComparisonChart expenses={periodExpenses} incomes={periodIncomes} timeRange={timeRange} />
             <div className="max-w-3xl mx-auto">
-              <CumulativeChart expenses={expenses} incomes={incomes} />
+              <CumulativeChart expenses={periodExpenses} incomes={periodIncomes} timeRange={timeRange} />
             </div>
-<div className="w-full">
-  <CategorySpendingChart expenses={expenses} totalIncome={totalIncome} />
-</div>
+            <div className="w-full">
+              <CategorySpendingChart expenses={periodExpenses} totalIncome={totalIncome} />
+            </div>
           </div>
         )}
 
@@ -528,16 +554,16 @@ function App() {
           <>
             {/* Income Chart */}
             <div className="bg-white rounded-2xl shadow-md p-6 mb-4">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">📈 Income Over Last 7 Days</h2>
-              <IncomeChart incomes={filteredIncomes} />
+              <h2 className="text-xl font-bold text-gray-800 mb-4">📈 Income Over Time</h2>
+              <IncomeChart incomes={periodIncomes} timeRange={timeRange} />
             </div>
-            {/* Income List for last 7 days */}
+            {/* Income List */}
             <div className="bg-white rounded-2xl shadow-md p-6">
               <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-4">
-                <h3 className="text-sm font-bold text-navy-dark uppercase tracking-wider">Income Records (Last 7 Days)</h3>
+                <h3 className="text-sm font-bold text-navy-dark uppercase tracking-wider">Income Records ({timeRange})</h3>
                 <div className="flex items-center gap-2">
                   <span className="text-xs bg-navy text-slate-300 border border-navy-border px-2.5 py-0.5 rounded-full font-medium">
-                    {filteredIncomes.length} records
+                    {displayedIncomes.length} records
                   </span>
                   <button onClick={handleDownloadIncomeWeek} className="bg-white hover:bg-gray-100 text-navy-dark border border-gray-300 text-xs px-3 py-1 rounded">
                     Download Week
@@ -547,11 +573,11 @@ function App() {
                   </button>
                 </div>
               </div>
-              {filteredIncomes.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-6">No income records for the last 7 days. Add your recent income!</p>
+              {displayedIncomes.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-6">No income records for {timeRange}. Add your recent income!</p>
               ) : (
                 <ul className="space-y-3">
-                  {filteredIncomes.map((inc) => (
+                  {displayedIncomes.map((inc) => (
                     <li key={inc._id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
                       <div>
                         <p className="text-sm font-semibold text-navy-dark">{inc.source || inc.title || 'Income'}</p>
