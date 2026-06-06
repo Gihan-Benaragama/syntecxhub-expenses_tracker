@@ -357,28 +357,28 @@ function App() {
         <div className="flex bg-navy border border-navy-border rounded-lg p-0.5 gap-0.5 items-center">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`px-2 py-1 rounded text-xs font-semibold transition ${activeTab === 'dashboard' ? 'bg-accent text-navy-dark font-bold' : 'text-slate-400'
+            className={`px-2 py-1 rounded text-xs font-semibold transition ${activeTab === 'dashboard' ? 'bg-accent text-[#0a1628] font-bold' : 'text-slate-400'
               }`}
           >
             Dash
           </button>
           <button
             onClick={() => setActiveTab('expenses')}
-            className={`px-2 py-1 rounded text-xs font-semibold transition ${activeTab === 'expenses' ? 'bg-accent text-navy-dark font-bold' : 'text-slate-400'
+            className={`px-2 py-1 rounded text-xs font-semibold transition ${activeTab === 'expenses' ? 'bg-accent text-[#0a1628] font-bold' : 'text-slate-400'
               }`}
           >
             List
           </button>
           <button
             onClick={() => setActiveTab('incomes')}
-            className={`px-2 py-1 rounded text-xs font-semibold transition ${activeTab === 'incomes' ? 'bg-accent text-navy-dark font-bold' : 'text-slate-400'
+            className={`px-2 py-1 rounded text-xs font-semibold transition ${activeTab === 'incomes' ? 'bg-accent text-[#0a1628] font-bold' : 'text-slate-400'
               }`}
           >
             Income
           </button>
           <button
             onClick={() => setActiveTab('analytics')}
-            className={`px-2 py-1 rounded text-xs font-semibold transition ${activeTab === 'analytics' ? 'bg-accent text-navy-dark font-bold' : 'text-slate-400'
+            className={`px-2 py-1 rounded text-xs font-semibold transition ${activeTab === 'analytics' ? 'bg-accent text-[#0a1628] font-bold' : 'text-slate-400'
               }`}
           >
             Charts
@@ -410,11 +410,10 @@ function App() {
                 <button
                   key={range}
                   onClick={() => setTimeRange(range)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                    timeRange === range
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${timeRange === range
                       ? 'bg-white text-[#1b62cd] shadow-sm font-bold border border-slate-200/50'
                       : 'text-slate-500 hover:text-slate-800'
-                  }`}
+                    }`}
                 >
                   {range}
                 </button>
