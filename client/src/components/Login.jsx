@@ -130,7 +130,7 @@ const Login = ({ onLoginSuccess }) => {
             setGoogleLoading(true)
             setError('')
             try {
-                const res = await fetch('http://localhost:5000/api/users/google-auth', {
+                const res = await fetch('https://syntecxhub-expenses-tracker.onrender.com/api/users/google-auth', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ access_token: response.access_token })

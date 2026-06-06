@@ -1,6 +1,7 @@
 import axios from 'axios'
 
-const BASE_URL = 'http://localhost:5000/api'
+//const BASE_URL = 'http://localhost:5000/api'
+const BASE_URL = 'https://syntecxhub-expenses-tracker.onrender.com/api'
 
 // Add request interceptor to attach JWT token
 axios.interceptors.request.use(
