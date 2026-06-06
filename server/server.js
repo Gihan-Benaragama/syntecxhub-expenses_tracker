@@ -1,28 +1,35 @@
+import dotenv from 'dotenv'
+dotenv.config() // MUST be first
+
+//1044247391071-ltlissdmetmev628mfn6rdop7nqnd4sc.apps.googleusercontent.com - cliwntid
+
 import express from 'express'
 import mongoose from 'mongoose'
 import cors from 'cors'
-import dotenv from 'dotenv'
 import dns from 'dns'
 import expenseRoutes from './routes/expenses.js'
 import userRoutes from './routes/userRoute.js'
+import passport from 'passport'
+import googleAuthRoutes from './routes/googleAuth.js'
+import './middleware/googleStrategy.js' // initialize Google strategy (needs env vars)
 
 // Fix for Node.js querySrv ECONNREFUSED error on some Windows/VPN environments.
-// If the detected DNS server is localhost/loopback, fall back to Google & Cloudflare DNS.
 const currentDns = dns.getServers()
 if (!currentDns.length || (currentDns.length === 1 && (currentDns[0] === '127.0.0.1' || currentDns[0] === '::1'))) {
     dns.setServers(['8.8.8.8', '1.1.1.1'])
 }
-
-dotenv.config()
-
 
 const app = express()
 
 app.use(cors())
 app.use(express.json())
 
+// Initialize passport
+app.use(passport.initialize())
+
 // Routes
 app.use('/api/users', userRoutes)
+app.use('/api/users', googleAuthRoutes) // Google OAuth routes
 app.use('/api/expenses', expenseRoutes)
 
 // Test route

@@ -50,6 +50,24 @@ function App() {
   useEffect(() => {
     setRefresh(r => r + 1);
   }, [incomes]);
+
+  // Parse Google OAuth token from URL query parameters on initial load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const id = params.get('id');
+    const name = params.get('name');
+    const email = params.get('email');
+    if (token && id && name && email) {
+      const userData = { token, _id: id, name, email };
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      setToastMessage(`Welcome, ${decodeURIComponent(name)}!`);
+      // Clean up URL to remove query params
+      const newUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, []);
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('')
@@ -63,6 +81,8 @@ function App() {
     setToastMessage(`Welcome back, ${userData.name}!`)
     setTimeout(() => setToastMessage(''), 3000)
   }, [])
+
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
   const handleLogout = () => {
     localStorage.removeItem('user')
@@ -314,7 +334,7 @@ function App() {
               <p className="text-[10px] text-slate-400 truncate tracking-wide">{user?.email}</p>
             </div>
             <button
-              onClick={handleLogout}
+              onClick={() => setShowLogoutConfirm(true)}
               className="text-slate-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition duration-150 text-sm shrink-0"
               title="Logout"
             >
@@ -364,7 +384,7 @@ function App() {
             Charts
           </button>
           <button
-            onClick={handleLogout}
+            onClick={() => setShowLogoutConfirm(true)}
             className="px-2 py-1 rounded text-xs text-rose-400 hover:text-rose-600 transition duration-150"
             title="Logout"
           >
@@ -618,6 +638,42 @@ function App() {
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#0B132B] border border-accent/25 text-slate-100 px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 animate-bounce">
           <span className="text-accent">ℹ️</span> {toastMessage}
+        </div>
+      )}
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowLogoutConfirm(false)}
+          />
+          <div className="relative bg-[#0B132B] border border-navy-border/50 rounded-2xl shadow-2xl p-7 w-full max-w-sm mx-4">
+            <div className="flex justify-center mb-4">
+              <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-2xl">
+                🚪
+              </div>
+            </div>
+            <h3 className="text-center text-lg font-bold text-slate-100 mb-1">Sign out?</h3>
+            <p className="text-center text-sm text-slate-400 mb-6">
+              Hey <span className="text-accent font-semibold">{user?.name?.split(' ')[0]}</span>, are you sure you want to logout?
+              <br />Your data will be saved.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl border border-navy-border text-slate-300 text-sm font-semibold hover:bg-navy-border/20 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setShowLogoutConfirm(false); handleLogout(); }}
+                className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold transition shadow-lg shadow-rose-500/20"
+              >
+                Yes, Logout
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
