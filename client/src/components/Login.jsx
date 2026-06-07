@@ -37,6 +37,7 @@ const Login = ({ onLoginSuccess }) => {
     const [currentIdx, setCurrentIdx] = useState(0)
     const [nextIdx, setNextIdx] = useState(1)
     const [blocksCovered, setBlocksCovered] = useState(false)
+    const [textVisible, setTextVisible] = useState(true)
     const isRunning = useRef(false)
     const nextIdxRef = useRef(1)   // ref so setInterval closure always reads latest nextIdx
 
@@ -45,25 +46,29 @@ const Login = ({ onLoginSuccess }) => {
             if (isRunning.current) return
             isRunning.current = true
 
-            // Phase 1 – blocks scale IN (cover Layer 2 / current image)
+            // Phase 1: blocks scale IN (reveals nextIdx image) & fade text out
             setBlocksCovered(true)
+            setTextVisible(false)
 
             setTimeout(() => {
-                // While fully covered: advance current → next, preload new next
+                // Swap current image to next image
                 const ni = nextIdxRef.current
                 setCurrentIdx(ni)
                 const newNext = (ni + 1) % slideData.length
                 nextIdxRef.current = newNext
                 setNextIdx(newNext)
 
-                setTimeout(() => {
-                    // Phase 2 – blocks scale OUT (reveal Layer 1 / new next image)
-                    setBlocksCovered(false)
+                // Phase 2: blocks scale OUT smoothly (revealing currentIdx image underneath)
+                setBlocksCovered(false)
 
-                    setTimeout(() => {
-                        isRunning.current = false
-                    }, COVER_MS)
-                }, PAUSE_MS)
+                // Delay fading the text back in to align with the blocks scaling out
+
+                setTextVisible(true)
+
+
+                setTimeout(() => {
+                    isRunning.current = false
+                }, COVER_MS)
             }, COVER_MS)
         }, 3500)
         return () => clearInterval(interval)
@@ -174,52 +179,46 @@ const Login = ({ onLoginSuccess }) => {
                     backgroundSize: 'cover', backgroundPosition: 'center',
                 }} />
 
-                {/* Layer 3 — Dark blue gradient overlay (z:2) */}
+                {/* Layer 3 — Dark blue gradient overlay (z:3) */}
                 <div style={{
-                    position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none',
+                    position: 'absolute', inset: 0, zIndex: 3, pointerEvents: 'none',
                     background: 'linear-gradient(135deg, rgba(10,26,60,0.78) 0%, rgba(27,98,205,0.32) 55%, transparent 100%)',
                 }} />
 
-                {/* Layer 4 — Slide text + progress dots (z:3) */}
+                {/* Layer 4 — Slide text + progress dots (z:4) */}
                 <div style={{
-                    position: 'relative', zIndex: 3,
+                    position: 'relative', zIndex: 4,
                     padding: '4rem', marginTop: '3rem', maxWidth: '28rem',
                 }}>
-                    <h2 style={{
-                        fontSize: '2.6rem', fontWeight: 700, color: '#ffffff',
-                        letterSpacing: '-0.02em', lineHeight: 1.15,
-                        textShadow: '0 2px 14px rgba(10,26,60,0.55)',
-                        transition: 'opacity 0.4s ease',
+                    <div style={{
+                        opacity: textVisible ? 1 : 0,
+                        transform: textVisible ? 'translateY(0)' : 'translateY(20px)',
+                        transition: textVisible ? 'opacity 0.6s ease -0.2s, transform 0.6s ease -0.2s'
+                            : 'opacity 0.4s ease, transform 0.4s ease',
                     }}>
-                        {slideData[currentIdx].title}
-                    </h2>
-                    <p style={{
-                        fontSize: '1rem', color: 'rgba(255,255,255,0.82)',
-                        marginTop: '0.75rem', fontWeight: 500,
-                        letterSpacing: '0.02em',
-                        textShadow: '0 1px 8px rgba(10,26,60,0.4)',
-                        transition: 'opacity 0.4s ease',
-                    }}>
-                        {slideData[currentIdx].subtitle}
-                    </p>
+                        <h2 style={{
+                            fontSize: '2.6rem', fontWeight: 700, color: '#ffffff',
+                            letterSpacing: '-0.02em', lineHeight: 1.15,
+                            textShadow: '0 2px 14px rgba(10,26,60,0.55)',
 
-                    {/* Progress dots */}
-                    <div style={{ display: 'flex', gap: '7px', marginTop: '2rem' }}>
-                        {slideData.map((_, di) => di === 0 ? null : (
-                            <div key={di} style={{
-                                height: '6px',
-                                width: di === currentIdx ? '26px' : '6px',
-                                borderRadius: '9999px',
-                                background: di === currentIdx ? '#ffffff' : 'rgba(255,255,255,0.35)',
-                                transition: 'all 0.4s ease',
-                            }} />
-                        ))}
+                        }}>
+                            {slideData[currentIdx].title}
+                        </h2>
+                        <p style={{
+                            fontSize: '1rem', color: 'rgba(255,255,255,0.82)',
+                            marginTop: '0.75rem', fontWeight: 500,
+                            letterSpacing: '0.02em',
+                            textShadow: '0 1px 8px rgba(10,26,60,0.4)',
+                        }}>
+                            {slideData[currentIdx].subtitle}
+                        </p>
                     </div>
+
                 </div>
 
-                {/* Layer 5 — 8×5 Mosaic block grid (z:4) covers Layer 2 during wipe */}
+                {/* Layer 5 — 8×5 Mosaic block grid (z:2) covers Layer 2 during wipe */}
                 <div style={{
-                    position: 'absolute', inset: 0, zIndex: 4,
+                    position: 'absolute', inset: 0, zIndex: 2,
                     display: 'grid',
                     gridTemplateColumns: `repeat(${MOSAIC_COLS}, 1fr)`,
                     gridTemplateRows: `repeat(${MOSAIC_ROWS}, 1fr)`,
@@ -234,13 +233,26 @@ const Login = ({ onLoginSuccess }) => {
                             <div
                                 key={i}
                                 style={{
-                                    background: 'rgba(8, 18, 45, 0.97)',
+                                    position: 'relative',
+                                    overflow: 'hidden',
                                     borderRadius: '2px',
                                     transform: blocksCovered ? 'scale(1)' : 'scale(0)',
                                     transition: `transform ${BLOCK_DUR}ms cubic-bezier(0.4,0,0.2,1) ${delay}ms`,
                                     transformOrigin: 'center',
                                 }}
-                            />
+                            >
+                                <div style={{
+                                    position: 'absolute',
+                                    width: `${MOSAIC_COLS * 100}%`,
+                                    height: `${MOSAIC_ROWS * 100}%`,
+                                    left: `${-col * 100}%`,
+                                    top: `${-row * 100}%`,
+                                    backgroundImage: `url('${slideData[blocksCovered ? nextIdx : currentIdx].img}')`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                    backgroundRepeat: 'no-repeat',
+                                }} />
+                            </div>
                         )
                     })}
                 </div>

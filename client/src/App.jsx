@@ -63,7 +63,7 @@ function App() {
       const userData = { token, _id: id, name, email };
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
-      setToastMessage(`Welcome, ${decodeURIComponent(name)}!`);
+      showToast(`Welcome, ${decodeURIComponent(name)}! 👋`, 'info')
       // Clean up URL to remove query params
       const newUrl = window.location.origin + window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
@@ -72,16 +72,22 @@ function App() {
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('')
-  const [toastMessage, setToastMessage] = useState('')
+  const [toast, setToast] = useState(null)  // { message, type: 'success'|'info'|'error' }
+  const toastTimerRef = useRef(null)
   const topRef = useRef(null)
+
+  const showToast = useCallback((message, type = 'success') => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    setToast({ message, type, id: Date.now() })
+    toastTimerRef.current = setTimeout(() => setToast(null), 3500)
+  }, [])
 
 
   const handleLoginSuccess = useCallback((userData) => {
     localStorage.setItem('user', JSON.stringify(userData))
     setUser(userData)
-    setToastMessage(`Welcome back, ${userData.name}!`)
-    setTimeout(() => setToastMessage(''), 3000)
-  }, [])
+    showToast(`Welcome back, ${userData.name}! 👋`, 'info')
+  }, [showToast])
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
@@ -209,9 +215,29 @@ function App() {
     return (
       <>
         <Login onLoginSuccess={handleLoginSuccess} />
-        {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 bg-[#0B132B] border border-accent/25 text-slate-100 px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 animate-bounce">
-            <span className="text-accent">ℹ️</span> {toastMessage}
+        {toast && (
+          <div
+            key={toast.id}
+            style={{
+              position: 'fixed', bottom: '1.75rem', right: '1.75rem', zIndex: 9999,
+              display: 'flex', alignItems: 'center', gap: '0.75rem',
+              padding: '0.85rem 1.25rem',
+              borderRadius: '1rem',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.22)',
+              minWidth: '240px', maxWidth: '340px',
+              background: 'linear-gradient(135deg,#0B132B 60%,#101e46 100%)',
+              border: '1px solid rgba(99,179,237,0.3)',
+              animation: 'toastSlideIn 0.35s cubic-bezier(0.22,1,0.36,1)',
+            }}
+          >
+            <span style={{ fontSize: '1.35rem', lineHeight: 1 }}>ℹ️</span>
+            <span style={{ color: '#f1f5f9', fontSize: '0.8rem', fontWeight: 600, lineHeight: 1.4 }}>
+              {toast.message}
+            </span>
+            <button
+              onClick={() => setToast(null)}
+              style={{ marginLeft: 'auto', color: 'rgba(148,163,184,0.7)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', lineHeight: 1, padding: '0 0 0 0.25rem' }}
+            >✕</button>
           </div>
         )}
       </>
@@ -599,7 +625,14 @@ function App() {
         onClose={() => setShowExpenseModal(false)}
         title="Add New Expense"
       >
-        <ExpenseForm onAdd={addExpense} onClose={() => setShowExpenseModal(false)} />
+        <ExpenseForm
+          onAdd={async (data) => {
+            await addExpense(data)
+            setShowExpenseModal(false)
+            showToast('Expense added successfully! 💸', 'success')
+          }}
+          onClose={() => setShowExpenseModal(false)}
+        />
       </Modal>
 
       {/* Add Income Modal */}
@@ -608,13 +641,50 @@ function App() {
         onClose={() => setShowIncomeModal(false)}
         title="Add New Income"
       >
-        <IncomeForm onAdd={addIncome} onClose={() => setShowIncomeModal(false)} />
+        <IncomeForm
+          onAdd={async (data) => {
+            await addIncome(data)
+            setShowIncomeModal(false)
+            showToast('Income recorded successfully! 💰', 'success')
+          }}
+          onClose={() => setShowIncomeModal(false)}
+        />
       </Modal>
 
       {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#0B132B] border border-accent/25 text-slate-100 px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 animate-bounce">
-          <span className="text-accent">ℹ️</span> {toastMessage}
+      {toast && (
+        <div
+          key={toast.id}
+          style={{
+            position: 'fixed', bottom: '1.75rem', right: '1.75rem', zIndex: 9999,
+            display: 'flex', alignItems: 'center', gap: '0.75rem',
+            padding: '0.85rem 1.25rem',
+            borderRadius: '1rem',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.22)',
+            minWidth: '240px', maxWidth: '340px',
+            background: toast.type === 'success'
+              ? 'linear-gradient(135deg,#0d2137 60%,#0a3320 100%)'
+              : toast.type === 'error'
+                ? 'linear-gradient(135deg,#1e0a0a 60%,#3b0f0f 100%)'
+                : 'linear-gradient(135deg,#0B132B 60%,#101e46 100%)',
+            border: toast.type === 'success'
+              ? '1px solid rgba(34,197,94,0.35)'
+              : toast.type === 'error'
+                ? '1px solid rgba(239,68,68,0.35)'
+                : '1px solid rgba(99,179,237,0.3)',
+            animation: 'toastSlideIn 0.35s cubic-bezier(0.22,1,0.36,1)',
+          }}
+        >
+          <span style={{ fontSize: '1.35rem', lineHeight: 1 }}>
+            {toast.type === 'success' ? '✅' : toast.type === 'error' ? '❌' : 'ℹ️'}
+          </span>
+          <span style={{ color: '#f1f5f9', fontSize: '0.8rem', fontWeight: 600, lineHeight: 1.4 }}>
+            {toast.message}
+          </span>
+          <button
+            onClick={() => setToast(null)}
+            style={{ marginLeft: 'auto', color: 'rgba(148,163,184,0.7)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', lineHeight: 1, padding: '0 0 0 0.25rem' }}
+          >✕</button>
         </div>
       )}
 
