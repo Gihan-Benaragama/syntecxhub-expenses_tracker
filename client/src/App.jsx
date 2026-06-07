@@ -14,6 +14,7 @@ import CumulativeChart from './components/CumulativeChart';
 import CategorySpendingChart from './components/CategorySpendingChart';
 import IncomeForm from './components/IncomeForm'
 import Login from './components/Login'
+import logo from './assets/logo.png'
 
 function App() {
   const [user, setUser] = useState(() => {
@@ -223,9 +224,7 @@ function App() {
         {/* Sidebar placeholder during load */}
         <aside className="hidden lg:flex flex-col w-64 bg-navy-dark text-white border-r border-navy-border/50 shrink-0 h-screen sticky top-0">
           <div className="p-6 border-b border-navy-border/30 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-navy-dark text-lg font-bold shadow-md shadow-accent/25">
-              Syn
-            </div>
+            <img src={logo} className="w-8 h-8 object-contain" alt="Syntecxhub Logo" />
             <div>
               <h1 className="text-md font-bold tracking-wider leading-none uppercase text-slate-100">Syntecxhub</h1>
               <span className="text-[10px] text-accent font-semibold tracking-widest uppercase">Expenses</span>
@@ -257,9 +256,7 @@ function App() {
         <div className="relative z-10 flex flex-col h-full">
           {/* Logo/Branding */}
           <div className="p-6 border-b border-navy-border/30 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-navy-dark text-lg font-bold shadow-md shadow-accent/25">
-              Syn
-            </div>
+            <img src={logo} className="w-8 h-8 object-contain" alt="Syntecxhub Logo" />
             <div>
               <h1 className="text-md font-bold tracking-wider leading-none uppercase text-slate-100">Syntecxhub</h1>
               <span className="text-[10px] text-accent font-semibold tracking-widest uppercase">Expenses</span>
@@ -306,23 +303,6 @@ function App() {
             </button>
           </nav>
 
-          {/* Quick Stats Box */}
-          <div className="p-4 m-4 bg-navy/65 backdrop-blur-md border border-navy-border/80 rounded-xl">
-            <p className="text-xs text-slate-400 font-medium">Total Spent</p>
-            <p className="text-xl font-bold text-accent mt-0.5">Rs. {total.toLocaleString()}</p>
-            <div className="w-full bg-navy-dark rounded-full h-1.5 mt-2 border border-navy-border/50">
-              <div
-                className="bg-accent h-1.5 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min((total / 100000) * 100, 100)}%` }}
-              ></div>
-            </div>
-            <div className="flex justify-between items-center mt-2.5 text-[10px] text-slate-400">
-              <span>Limit: Rs. 100,000</span>
-              <span className={`font-semibold ${remainingBalance >= 0 ? 'text-accent' : 'text-rose-400'}`}>
-                Bal: Rs. {remainingBalance.toLocaleString()}
-              </span>
-            </div>
-          </div>
 
           {/* User Card */}
           <div className="p-4 border-t border-navy-border/30 flex items-center gap-3 bg-navy-dark/40">
@@ -560,9 +540,7 @@ function App() {
               incomes={periodIncomes}
             />
             <DailyComparisonChart expenses={periodExpenses} incomes={periodIncomes} timeRange={timeRange} />
-            <div className="max-w-3xl mx-auto">
-              <CumulativeChart expenses={periodExpenses} incomes={periodIncomes} timeRange={timeRange} />
-            </div>
+            <CumulativeChart expenses={periodExpenses} incomes={periodIncomes} timeRange={timeRange} />
             <div className="w-full">
               <CategorySpendingChart expenses={periodExpenses} totalIncome={totalIncome} />
             </div>

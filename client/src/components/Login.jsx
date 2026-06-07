@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useGoogleLogin } from '@react-oauth/google'
 import { loginUser, registerUser } from '../api/expenses'
+import logo from '../assets/logo.png'
 import slide1 from '../assets/slide1.png'
 import slide2 from '../assets/slide2.png'
 import slide3 from '../assets/slide3.png'
@@ -64,7 +65,7 @@ const Login = ({ onLoginSuccess }) => {
                     }, COVER_MS)
                 }, PAUSE_MS)
             }, COVER_MS)
-        }, 5500)
+        }, 3500)
         return () => clearInterval(interval)
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
@@ -263,10 +264,7 @@ const Login = ({ onLoginSuccess }) => {
                 <div className="w-full max-w-[380px] space-y-7 z-10">
                     {/* Centered Hexagonal Logo */}
                     <div className="text-center">
-                        <svg className="w-[72px] h-[72px] mx-auto mb-4" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            {/* Stylized Hexagon 'C' Logo in Hex Color Matching Mockup */}
-                            <path d="M75 35 L50 20 L20 37 L20 63 L50 80 L75 65 L75 52 L50 67 L35 58 L35 42 L50 33 L75 48 Z" fill="#1b62cd" />
-                        </svg>
+                        <img src={logo} className="w-48 h-48 mx-auto -mb-6 object-contain drop-shadow-sm" alt="Syntecxhub Logo" />
                         <h1 className="text-3xl font-extrabold text-[#0a2240] tracking-tight leading-none">
                             {isLogin ? 'Welcome' : 'Register'}
                         </h1>
